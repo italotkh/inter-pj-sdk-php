@@ -19,7 +19,9 @@ class EnrichedTransaction
     private ?string $value;
     private ?string $title;
     private ?string $description;
+    private ?string $document_number;
     private ?EnrichedTransactionDetails $details;
+    private array $raw_transaction;
 
     public function __construct(
         ?string $cpmf = null,
@@ -31,7 +33,9 @@ class EnrichedTransaction
         ?string $value = null,
         ?string $title = null,
         ?string $description = null,
-        ?EnrichedTransactionDetails $details = null
+        ?string $document_number = null,
+        ?EnrichedTransactionDetails $details = null,
+        array $raw_transaction = []
     ) {
         $this->cpmf = $cpmf;
         $this->transaction_id = $transaction_id;
@@ -42,22 +46,28 @@ class EnrichedTransaction
         $this->value = $value;
         $this->title = $title;
         $this->description = $description;
+        $this->document_number = $document_number;
         $this->details = $details;
+        $this->raw_transaction = $raw_transaction;
     }
 
     public static function fromJson(mixed $json): self
     {
+        $raw = is_array($json) ? $json : [];
+
         return new self(
-            $json['cpmf'] ?? null,
-            $json['idTransacao'] ?? null,
-            $json['dataInclusao'] ?? null,
-            $json['dataTransacao'] ?? null,
-            $json['tipoTransacao'] ?? null,
-            $json['tipoOperacao'] ?? null,
-            $json['valor'] ?? null,
-            $json['titulo'] ?? null,
-            $json['descricao'] ?? null,
-            isset($json['detalhes']) ? EnrichedTransactionDetails::fromJson($json['detalhes']) : null
+            $raw['cpmf'] ?? null,
+            $raw['idTransacao'] ?? null,
+            $raw['dataInclusao'] ?? null,
+            $raw['dataTransacao'] ?? null,
+            $raw['tipoTransacao'] ?? null,
+            $raw['tipoOperacao'] ?? null,
+            $raw['valor'] ?? null,
+            $raw['titulo'] ?? null,
+            $raw['descricao'] ?? null,
+            $raw['numeroDocumento'] ?? null,
+            isset($raw['detalhes']) ? EnrichedTransactionDetails::fromJson($raw['detalhes']) : null,
+            $raw
         );
     }
 
@@ -66,34 +76,24 @@ class EnrichedTransaction
      */
     public function toJson(): string
     {
-        $obj = [
-            "cpmf" => $this->cpmf,
-            "idTransacao" => $this->transaction_id,
-            "dataInclusao" => $this->inclusion_date,
-            "dataTransacao" => $this->transaction_date,
-            "tipoTransacao" => $this->transaction_type,
-            "tipoOperacao" => $this->operation_type,
-            "valor" => $this->value,
-            "titulo" => $this->title,
-            "descricao" => $this->description,
-            "detalhes" => $this->details?->toJson(),
-        ];
-        return json_encode($obj, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        return json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
     }
 
     public function toArray(): array
     {
-        return [
-            "cpmf" => $this->cpmf,
-            "idTransacao" => $this->transaction_id,
-            "dataInclusao" => $this->inclusion_date,
-            "dataTransacao" => $this->transaction_date,
-            "tipoTransacao" => $this->transaction_type,
-            "tipoOperacao" => $this->operation_type,
-            "valor" => $this->value,
-            "titulo" => $this->title,
-            "descricao" => $this->description,
-            "detalhes" => $this->details?->toArray(),
-        ];
+        $transaction = $this->raw_transaction;
+        $transaction['cpmf'] = $this->cpmf;
+        $transaction['idTransacao'] = $this->transaction_id;
+        $transaction['dataInclusao'] = $this->inclusion_date;
+        $transaction['dataTransacao'] = $this->transaction_date;
+        $transaction['tipoTransacao'] = $this->transaction_type;
+        $transaction['tipoOperacao'] = $this->operation_type;
+        $transaction['valor'] = $this->value;
+        $transaction['titulo'] = $this->title;
+        $transaction['descricao'] = $this->description;
+        $transaction['numeroDocumento'] = $this->document_number;
+        $transaction['detalhes'] = $this->details?->toArray();
+
+        return $transaction;
     }
 }

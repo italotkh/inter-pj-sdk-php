@@ -11,16 +11,21 @@ use JsonException;
 class EnrichedTransactionDetails
 {
     private ?string $detail_type;
+    private array $raw_details;
 
-    public function __construct(?string $detail_type = null)
+    public function __construct(?string $detail_type = null, array $raw_details = [])
     {
         $this->detail_type = $detail_type;
+        $this->raw_details = $raw_details;
     }
 
     public static function fromJson(mixed $json): self
     {
+        $raw = is_array($json) ? $json : [];
+
         return new self(
-            $json['tipoDetalhe'] ?? null
+            $raw['tipoDetalhe'] ?? null,
+            $raw
         );
     }
 
@@ -29,16 +34,16 @@ class EnrichedTransactionDetails
      */
     public function toJson(): string
     {
-        $obj = [
-            "tipoDetalhe" => $this->detail_type
-        ];
-        return json_encode($obj, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+        return json_encode($this->toArray(), JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
     }
 
     public function toArray(): array
     {
-        return [
-            "tipoDetalhe" => $this->detail_type
-        ];
+        $details = $this->raw_details;
+        if (!array_key_exists('tipoDetalhe', $details)) {
+            $details['tipoDetalhe'] = $this->detail_type;
+        }
+
+        return $details;
     }
 }
